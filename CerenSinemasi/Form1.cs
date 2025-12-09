@@ -20,6 +20,8 @@ namespace beste
         private readonly string cs = "Server=localhost;Database=bilet_sistemi;User Id=root;Password=Ghezzal18.";
 
 
+
+
         public Form1()
         {
             InitializeComponent();
@@ -50,7 +52,7 @@ namespace beste
                 panelKoltuklar = new Panel();
                 panelKoltuklar.Size = new Size(320, 250);
                 panelKoltuklar.Location = new Point(12, 30);
-                panelKoltuklar.BackColor = Color.LightGray;
+                //panelKoltuklar.BackColor = Color.LightGray;
                 this.Controls.Add(panelKoltuklar);
 
                 int rows = 5; //5sıra koltuk
@@ -68,7 +70,10 @@ namespace beste
                             Left = j * (buttonSize + 5), //Sütun sayısına göre göre butonun yatay konumu.
                             Top = i * (buttonSize + 5), //Satır sayısına göre butonun dikey konumu
                             Text = $"{(char)('A' + i)}{j + 1}", //Koltuk yazısının oluşturulması.
-                            BackColor = Color.WhiteSmoke //Koltukların ilk rengi.
+
+                           
+
+                            //BackColor = Color.WhiteSmoke //Koltukların ilk rengi.
                         };
 
 
@@ -83,7 +88,42 @@ namespace beste
                 MessageBox.Show("Koltuk oluşturulurken bir hata oluştu.\n\n" + ex.Message, //hatanın nedenini yazar.
                                 "Koltuk Oluşturma Hatası", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
+
+            using (var conn = new MySqlConnection(cs))
+            {
+                conn.Open();
+
+                foreach (Control kontrol in panelKoltuklar.Controls)
+                {
+                    if (kontrol is Button koltuk)
+                    {
+                        // Veritabanından durum kontrol komutu
+                        var cmd = new MySqlCommand(
+                            "SELECT COUNT(*) FROM bilet " +
+                            "WHERE etkinlik_id=@etk AND koltuk_no=@koltuk " +
+                            "AND durum IN ('Rezerve','Satildi')",
+                            conn);
+
+                        cmd.Parameters.AddWithValue("@etk", 2); // aktif etkinlik ID
+                        cmd.Parameters.AddWithValue("@koltuk", koltuk.Text);
+
+                        int sonuc = Convert.ToInt32(cmd.ExecuteScalar());
+
+                        // --- DURUMA GÖRE RENKLENDİRME ---
+                        if (sonuc > 0)
+                        {
+                            koltuk.BackColor = Color.Red;       // dolu koltuk
+                            //koltuk.Enabled = false;             // tıklanamasın
+                        }
+                        else
+                        {
+                            koltuk.BackColor = Color.WhiteSmoke; // boş koltuk, başlangıç rengi
+                        }
+                    }
+                }
+            }
+
+            }
 
         private void Seat_Click(object sender, EventArgs e)
         {
@@ -91,7 +131,7 @@ namespace beste
 
             // Önceden seçili koltuk varsa rengini sıfırla
             if (selectedSeat != null)
-                selectedSeat.BackColor = Color.WhiteSmoke;
+                //selectedSeat.BackColor = Color.Green;
 
             // Yeni koltuğu işaretle, tıklanan koltuğun rengini yeşil yap.
             clickedSeat.BackColor = Color.LightGreen;
