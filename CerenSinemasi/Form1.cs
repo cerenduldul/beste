@@ -231,7 +231,9 @@ namespace beste
             // Bilet türüne göre fiyat hesaplaması burada olacak
         }
 
-        private void button1_Click(object sender, EventArgs e)
+
+
+        private void btnSave_Click(object sender, EventArgs e)
         {
 
         }
