@@ -84,11 +84,17 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="FormKoltumSecim.cs">
+    <Compile Include="FormKoltukSecim.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FormKoltumSecim.Designer.cs">
-      <DependentUpon>FormKoltumSecim.cs</DependentUpon>
+    <Compile Include="FormKoltukSecim.Designer.cs">
+      <DependentUpon>FormKoltukSecim.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmOdeme.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmOdeme.Designer.cs">
+      <DependentUpon>FrmOdeme.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -96,8 +102,11 @@
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FormKoltumSecim.resx">
-      <DependentUpon>FormKoltumSecim.cs</DependentUpon>
+    <EmbeddedResource Include="FormKoltukSecim.resx">
+      <DependentUpon>FormKoltukSecim.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmOdeme.resx">
+      <DependentUpon>FrmOdeme.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

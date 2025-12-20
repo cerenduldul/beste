@@ -40,9 +40,9 @@
             // 
             // btnSave
             // 
-            this.btnSave.Location = new System.Drawing.Point(489, 209);
+            this.btnSave.Location = new System.Drawing.Point(527, 210);
             this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(249, 23);
+            this.btnSave.Size = new System.Drawing.Size(261, 23);
             this.btnSave.TabIndex = 0;
             this.btnSave.Text = "Satın Al";
             this.btnSave.UseVisualStyleBackColor = true;
@@ -50,7 +50,7 @@
             // 
             // txtAdSoyad
             // 
-            this.txtAdSoyad.Location = new System.Drawing.Point(559, 95);
+            this.txtAdSoyad.Location = new System.Drawing.Point(613, 92);
             this.txtAdSoyad.Name = "txtAdSoyad";
             this.txtAdSoyad.Size = new System.Drawing.Size(175, 22);
             this.txtAdSoyad.TabIndex = 3;
@@ -58,7 +58,7 @@
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(559, 41);
+            this.comboBox1.Location = new System.Drawing.Point(613, 41);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(175, 24);
             this.comboBox1.TabIndex = 4;
@@ -67,7 +67,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(486, 158);
+            this.label2.Location = new System.Drawing.Point(524, 152);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(64, 16);
             this.label2.TabIndex = 5;
@@ -76,7 +76,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(486, 41);
+            this.label3.Location = new System.Drawing.Point(524, 41);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(63, 16);
             this.label3.TabIndex = 6;
@@ -84,7 +84,7 @@
             // 
             // txtKoltukNo
             // 
-            this.txtKoltukNo.Location = new System.Drawing.Point(559, 152);
+            this.txtKoltukNo.Location = new System.Drawing.Point(613, 152);
             this.txtKoltukNo.Name = "txtKoltukNo";
             this.txtKoltukNo.Size = new System.Drawing.Size(175, 22);
             this.txtKoltukNo.TabIndex = 8;
@@ -92,7 +92,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(482, 95);
+            this.label4.Location = new System.Drawing.Point(524, 92);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(67, 16);
             this.label4.TabIndex = 9;

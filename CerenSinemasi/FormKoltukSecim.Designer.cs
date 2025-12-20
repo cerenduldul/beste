@@ -1,7 +1,6 @@
-﻿using System.Windows.Forms;
-namespace beste
+﻿namespace CerenSinemasi
 {
-    partial class FormKoltumSecim : Form 
+    partial class FormKoltukSecim
     {
         /// <summary>
         /// Required designer variable.
@@ -31,14 +30,14 @@ namespace beste
         {
             this.SuspendLayout();
             // 
-            // FormKoltumSecim
+            // FormKoltukSecim
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Name = "FormKoltumSecim";
-            this.Text = "Koltuk Seçimi ";
+            this.Name = "FormKoltukSecim";
+            this.Text = "FormKoltukSecim";
+            this.Load += new System.EventHandler(this.FormKoltukSecim_Load);
             this.ResumeLayout(false);
 
         }
