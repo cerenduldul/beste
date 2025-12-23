@@ -3,6 +3,7 @@ using System.Collections.Generic; //List, dictionary gibi koleksiyon yapıların
 using System.Linq;//Listeler üzerinde Select, Where gibi sorgulama işlemlerini yapmayı sağlar.
 using System.Windows.Forms;
 using MySqlConnector;
+using beste.Models;
 
 namespace beste //Formun beste adlı isim alanına ait olduğunu belirtir. İsim alanı=?
 {
@@ -114,7 +115,7 @@ namespace beste //Formun beste adlı isim alanına ait olduğunu belirtir. İsim
                     
                     cmd.Parameters.AddWithValue("@b", b); 
 
-                    using (var rd = cmd.ExecuteReader()) //Sorgu sonucunu satır satır okumak için reader başlatır. Soru: Reader başlatmak ne demek*
+                    using (var rd = cmd.ExecuteReader()) 
                     {
                         if (rd.Read()) //Sorgudan en az bir kayıt gelip gelmediğini kontrol eder.
                         {
@@ -227,7 +228,7 @@ namespace beste //Formun beste adlı isim alanına ait olduğunu belirtir. İsim
                            
                             var cmd = new MySqlCommand(@" INSERT INTO odeme (bilet_id, odeme_tutari, odeme_yontemi, durum, odeme_tarihi, kullanici_id,
                                                                              bin4, banka_adi, kart_schemesi, kart_mask, son_kullanim_ay, son_kullanim_yil,
-                                                                             taksitli, taksit_sayisi) //Ödeme tablosuna kayıt eder.
+                                                                             taksitli, taksit_sayisi) 
 
                                                       VALUES (@bilet, @tutar, 'Kredi kartı', 'Tamamlandı', NOW(), @kid,
                                                       @bin4, @banka, @schema, @mask, @ay, @yil,
@@ -251,6 +252,29 @@ namespace beste //Formun beste adlı isim alanına ait olduğunu belirtir. İsim
                         tx.Commit(); //Tüm biletlerin ödemesi sorunsuzsa işlemleri kalıcı olarak onaylar. 
                     }
                 }
+                // PNR / BiletNo üret (12 haneli)
+                string pnr = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpper();
+
+                // Şimdilik ilk bileti QR’da gösterelim (birden fazla bilet varsa)
+                int ilkBiletId = biletIdleri[0];
+
+                Bilet qrBilet = new Bilet
+                {
+                    BiletNo = pnr,
+                    Koltuk = ilkBiletId.ToString(),      // İstersen DB'den koltuk çekince burayı güncelleriz
+                    Salon = "-",                         // İstersen DB'den salon çekince burayı güncelleriz
+                    MusteriAdi = textBox1.Text.Trim(),   // Kart sahibi ad-soyadını müşteri adı gibi gösteriyoruz
+                    Fiyat = toplamTutar,                 // Toplam
+                    OyunAdi = "Etkinlik",                // Şimdilik sabit (DB'den çekince gerçek olur)
+                    TiyatroAdi = "Mekan",
+                    TiyatroAdresi = "",
+                    BaslangicZamani = DateTime.Now.AddHours(1),
+                    BitisZamani = DateTime.Now.AddHours(3),
+                };
+
+                // QR ekranını aç
+                new FrmBiletQR(qrBilet).ShowDialog();
+
 
                 MessageBox.Show("Ödeme kaydedildi.");
                 this.Close();

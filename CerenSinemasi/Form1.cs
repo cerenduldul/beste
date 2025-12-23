@@ -389,15 +389,13 @@ namespace beste //Projenin isim alanını temsil eder.
                         sil.Parameters.AddWithValue("@k", koltukNo); //Silme sorgusuna iptal edilecek koltuk numarasını ekler.
                         sil.ExecuteNonQuery();//Silme SQL komutunu çalıştırır.
 
-                        //Aktif bileti iptal etmek için UPDATE SQL komutunu oluşturur. 
-                        //İlgili komutun aktif biletini iptal durumuna çevirir.
+                        
                         var iptal = new MySqlCommand(
                             "UPDATE bilet SET durum='Iptal', iptal_tarihi=NOW() " +
                             "WHERE etkinlik_id=@e AND koltuk_no=@k AND durum='Aktif' LIMIT 1",
                             conn, tx);
-                        iptal.Parameters.AddWithValue("@e", AKTIF_ETKINLIK_ID);//Güncelleme sorgusuna aktif etkinlik ID'sini ekler.
-                        iptal.Parameters.AddWithValue("@k", koltukNo);//Güncelleme sorgusuna koltuk numarasını ekler.
-
+                        iptal.Parameters.AddWithValue("@e", AKTIF_ETKINLIK_ID);
+                        iptal.Parameters.AddWithValue("@k", koltukNo);
                         int affected = iptal.ExecuteNonQuery(); //Kaç satırın eklendiğini kontrol etmek için sonucu alır.
                         if (affected == 0) //Aktif biletin bulunup bulunmadığını kontrol eder.
                         {
