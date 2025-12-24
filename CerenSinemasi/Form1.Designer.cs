@@ -137,6 +137,7 @@
         private System.Windows.Forms.TextBox txtKoltukNo;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button btnGeri;
     }
 }
 

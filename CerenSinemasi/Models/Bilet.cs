@@ -4,8 +4,9 @@ namespace beste.Models
 {
     public class Bilet
     {
+        // Mevcut alanlar
         public string BiletNo { get; set; }
-        public string OyunAdi { get; set; }
+        public string OyunAdi { get; set; }          // Etkinlik adı olarak kullanılıyor
         public string TiyatroAdi { get; set; }
         public string TiyatroAdresi { get; set; }
 
@@ -17,5 +18,10 @@ namespace beste.Models
         public string MusteriAdi { get; set; }
 
         public decimal Fiyat { get; set; }
+
+        // 🔴 EKLENEN ALANLAR (ZORUNLU)
+        public string KategoriAdi { get; set; }      // "Oyun" / "Konser"
+        public string EtkinlikAdi { get; set; }      // "Toz" / "Bir Büyülü Gece" / "Cimri"
     }
 }
+

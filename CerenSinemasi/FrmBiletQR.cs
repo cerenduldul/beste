@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Drawing;
 using System.Windows.Forms;
 using beste.Models;
-
 
 namespace beste
 {
@@ -25,14 +23,34 @@ namespace beste
         {
             if (_bilet == null) return;
 
-            lblOyun.Text = "Oyun: " + _bilet.OyunAdi;
-            lblTarih.Text = "Tarih: " + _bilet.BaslangicZamani.ToString("dd.MM.yyyy HH:mm");
-            lblSalon.Text = "Salon: " + _bilet.Salon;
-            lblKoltuk.Text = "Koltuk: " + _bilet.Koltuk;
-            lblPNR.Text = "PNR: " + _bilet.BiletNo;
-            lblFiyat.Text = "Fiyat: " + _bilet.Fiyat.ToString("0.00") + " TL";
+            EkraniDoldur();
+            QRUret();
+        }
 
-            if (picQR.Image != null) { picQR.Image.Dispose(); picQR.Image = null; }
+        private void EkraniDoldur()
+        {
+            string kategori = !string.IsNullOrWhiteSpace(_bilet.KategoriAdi) ? _bilet.KategoriAdi : "Etkinlik";
+            string etkinlik = !string.IsNullOrWhiteSpace(_bilet.EtkinlikAdi) ? _bilet.EtkinlikAdi : _bilet.OyunAdi;
+
+            lblOyun.Text = $"{kategori}: {etkinlik}";
+            lblTarih.Text = "Tarih: " + _bilet.BaslangicZamani.ToString("dd.MM.yyyy HH:mm");
+
+            string salon = string.IsNullOrWhiteSpace(_bilet.Salon) ? "-" : _bilet.Salon;
+            lblSalon.Text = "Salon: " + salon;
+
+            lblKoltuk.Text = "Koltuk: " + (!string.IsNullOrWhiteSpace(_bilet.Koltuk) ? _bilet.Koltuk : "-");
+            lblPNR.Text = "PNR: " + (!string.IsNullOrWhiteSpace(_bilet.BiletNo) ? _bilet.BiletNo : "-");
+            lblFiyat.Text = "Fiyat: " + _bilet.Fiyat.ToString("0.00") + " TL";
+        }
+
+        private void QRUret()
+        {
+            if (picQR.Image != null)
+            {
+                picQR.Image.Dispose();
+                picQR.Image = null;
+            }
+
             picQR.Image = BiletQRService.CreateEventQRCode(_bilet);
         }
     }

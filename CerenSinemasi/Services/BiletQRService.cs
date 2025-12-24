@@ -9,8 +9,10 @@ namespace beste
     {
         public static Bitmap CreateEventQRCode(Bilet bilet, int pixelsPerModule = 10)
         {
+            string etkinlikAd = !string.IsNullOrWhiteSpace(bilet.EtkinlikAdi) ? bilet.EtkinlikAdi : bilet.OyunAdi;
+
             var calendarEvent = new CalendarEvent(
-                subject: $"🎭 {bilet.OyunAdi}",
+                subject: $"🎫 {etkinlikAd}",
                 description: BuildDescription(bilet),
                 location: $"{bilet.TiyatroAdi}, {bilet.TiyatroAdresi}",
                 start: bilet.BaslangicZamani,
@@ -29,12 +31,15 @@ namespace beste
 
         private static string BuildDescription(Bilet bilet)
         {
+            string etkinlikAd = !string.IsNullOrWhiteSpace(bilet.EtkinlikAdi) ? bilet.EtkinlikAdi : bilet.OyunAdi;
+
             return
-                $"Bilet No: {bilet.BiletNo}\n" +
+                $"Etkinlik: {etkinlikAd}\n" +
+                $"Bilet No (PNR): {bilet.BiletNo}\n" +
                 $"Koltuk: {bilet.Koltuk}\n" +
                 $"Salon: {bilet.Salon}\n" +
                 $"Müşteri: {bilet.MusteriAdi}\n" +
-                $"Fiyat: {bilet.Fiyat:C2}";
+                $"Fiyat: {bilet.Fiyat:0.00} TL";
         }
     }
 }

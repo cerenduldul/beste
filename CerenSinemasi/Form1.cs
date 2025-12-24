@@ -1,416 +1,444 @@
-﻿using System;//C#'ın temel kütüphanesi
-using System.Collections.Generic;// Liste,dictionary gibi koleksiyonlar için
-using System.Data;// Veri işlemleri için
-using System.Drawing;// Grafik ve renk işlemleri için
-using System.Linq;// Liste ve koleksiyonlarla ilgili sorgulamalar bu kütüphane üzerinden yapılır.
-using System.Windows.Forms;// Windows Forms uygulamasında olduğumuzu ifade eder
-using MySqlConnector;//MySQL veritabanı bağlantısı için
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+using MySqlConnector;
 
-namespace beste //Projenin isim alanını temsil eder.
-{ // Namespace bloğunun başlangıcını temsil eder.
-    public partial class Form1 : Form //Form1 adında Windows Formdan oluşan sınıfı belirtir.
+namespace beste
+{
+    public partial class Form1 : Form
     {
+        // ✅ Bir önceki ekran (geri dönmek için)
+        private readonly Form _oncekiForm;
+
+        // ✅ Geri butonu (kodla eklenecek)
+        private Button _btnGeri;
+
         // Kullanıcının seçtiği koltukları tutan liste.
         private readonly List<Button> selectedSeats = new List<Button>();
 
-        // Koltuk butonlarının ekleneceği paneli temsil eder. Başlangıçta bol olan değişkendir.
+        // Koltuk butonlarının ekleneceği panel
         private Panel panelKoltuklar = null;
 
-        // İptal Modu ile ilgili değişkenler burada bulunur.
-        private bool iptalModu = false;// İptal modunun aktif olup olmadığını temsil eder.
-        private Button iptalSecilenKoltuk = null;//İptal edilmek için seçilen koltuğu temsil eden butonu tutar.
-        private CheckBox chkIptal = null;//İptal modunu açıp kapatmak için kullanılan CheckBox bileşenini temsil eder.
-        private Button btnIptal = null;//İptal işlemini başlatan butonu temsil eder.
+        // İptal Modu ile ilgili değişkenler
+        private bool iptalModu = false;
+        private Button iptalSecilenKoltuk = null;
+        private CheckBox chkIptal = null;
+        private Button btnIptal = null;
 
         // MySQL bağlantı
         private readonly string cs =
             "Server=localhost;Database=bilet_sistemi;User Id=root;Password=Ghezzal18.";
 
-        // Bu değişkenler sabittir ve değiştirelemez. Çünkü bu değerlerin sabit kalması güvenilirlik için önemlidir.
-        private const int AKTIF_ETKINLIK_ID = 2;//Uygulamada aktif olarak kullanılan etkinlik_Id değerini sabit olarak tutulmasını sağlayan komuttur.
-        private const int AKTIF_KULLANICI_ID = 1;//Uygulamada aktif olarak kullanılan kullanici_Id değerini sabit olarak tutulmasını sağlayan komut satırıdır.
+        private readonly int _aktifEtkinlikId;
+        private readonly int _aktifKullaniciId;
 
-        public Form1() // Form1 satırının kurucu metodudur. Form oluşurken otomatik olarak çalışır.
+        // Parametresiz constructor (opsiyonel)
+        public Form1()
         {
-            InitializeComponent(); // Formun tasarım dosyasında oluşturulan tüm kontrolleri ekrana yükler -button, label gibi-
+            InitializeComponent();
+            _aktifEtkinlikId = 2;
+            _aktifKullaniciId = 1;
+            _oncekiForm = null;
         }
 
-        private void Form1_Load(object sender, EventArgs e)// Form ekrana ilk yüklendiği anda çalışan olay metodudur.
+        // ✅ En doğru kullanım: önceki formu da al
+        public Form1(int etkinlikId, int kullaniciId, Form oncekiForm)
         {
-            // Koltukların dinamik olarak oluşturulmasını sağlayan komuttur.
-            KoltuklariOlustur();
+            InitializeComponent();
+            _aktifEtkinlikId = etkinlikId;
+            _aktifKullaniciId = kullaniciId;
+            _oncekiForm = oncekiForm;
+        }
 
-            // DB'ye göre koltuk renklerinin ayarlandığı komuttur. Gürkan Hocanın sorduğu komut satırı.
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            GeriButonunuEkle();
+
+            KoltuklariOlustur();
             KoltukRenkleriniDbyeGoreAyarla();
 
-            // Fiyat bilgisinin gösterimiyle ilgili komut satırlarıdır. Kullanıcı tarafından yazılamaz sadece seçilebilir olmasını sağlıyor.
             comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBox1.Enabled = false; // ComboBox'ı pasif hale getirerek sadece gerekli bilginin gözükmesini sağlar.
-            GuncelleBiletTuruBilgisi();//Bilet türü ve fiyat bilgisinin güncellenmesini sağlar.
+            comboBox1.Enabled = false;
+            GuncelleBiletTuruBilgisi();
 
-            // İptal modu kontrolleri için gerekli komut satırıdır.
             IptalKontrolleriniKur();
         }
 
-        private void KoltuklariOlustur() //Koltuk butonlarının dinamik oluşturulmasını için tanımlanan özel bir metottur.
+        private void GeriButonunuEkle()
         {
-            int rows = 6;    // A-F 6 satır.
-            int cols = 8;   // 1-8 Bir satırda 8 koltuk.
-            int size = 40; // Her koltuğun genişlik ve yükseklik değerini belirler.
-            int gap = 5;  // Koltuklar arasındaki boşluk miktarını belirler. piksel cinsinden ayarlanır : en küçük ölçü biriminden hesaplanır.
+            // Formda aynı isimde geri butonu zaten eklendiyse tekrar ekleme
+            if (Controls.Find("btnGeri", true).Length > 0) return;
 
-            panelKoltuklar = new Panel//Koltukların ekleneceği yeni bir panel nesnesi oluşturulur.
-            { //Panel özelliklerinin ayarlandığı bloğun başlangıcını temsil eder.
-                Location = new Point(12, 30), //Panelşn form üzerindeki bailangıç konumunu belirler.
-                Size = new Size( //Panelin koltuk sayısına göre otomatik hesaplanan genişlik ve yüksekliğini belirler.
-                    cols * size + (cols - 1) * gap, // Panelin genişliğini hesaplar. gap= koltuk butonlarının arasında bırakılan boşluk mesafesini ifade eder. Koltukların bitişik görünmesini engeller.
-                    rows * size + (rows - 1) * gap) //Panelin yüksekliğini hesaplar. 
+            _btnGeri = new Button
+            {
+                Name = "btnGeri",
+                Text = "←",
+                Width = 40,
+                Height = 30,
+                Left = 10,
+                Top = 10,
+                TabStop = false
             };
 
-            Controls.Add(panelKoltuklar); //Oluşturulan paneli formun ana kontrol listesine ekler ?
-
-            for (int i = 0; i < rows; i++) // Her satırdaki koltukları oluşturmak için sütunlar arasında dönen iç döngüdür.
+            _btnGeri.Click += (s, e) =>
             {
-                for (int j = 0; j < cols; j++) // Her sütundaki koltukları oluşturmak için satırlar arasında dönen dış döngüdür.
+                // Önceki ekran varsa göster
+                _oncekiForm?.Show();
+                // Bu ekranı kapat (program kapanmaz; önceki form açık olduğu için)
+                this.Close();
+            };
+
+            Controls.Add(_btnGeri);
+            _btnGeri.BringToFront();
+        }
+
+        private void KoltuklariOlustur()
+        {
+            int rows = 6;    // A-F
+            int cols = 8;    // 1-8
+            int size = 40;
+            int gap = 5;
+
+            panelKoltuklar = new Panel
+            {
+                Location = new Point(12, 30),
+                Size = new Size(
+                    cols * size + (cols - 1) * gap,
+                    rows * size + (rows - 1) * gap)
+            };
+
+            Controls.Add(panelKoltuklar);
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
                 {
-                    Button btn = new Button //Yeni bir buton nesnesi oluşturur.
+                    Button btn = new Button
                     {
-                        Width = size, //Butonun genişlik değerini belirler.
-                        Height = size, //Butonun yükseklik değerini belirler.
-                        Left = j * (size + gap), //Butonun panel içindeki yatay konumunu belirler.
-                        Top = i * (size + gap), //Butonun panel içindeki dikey konumunu belirler.
-                        Text = $"{(char)('A' + i)}{j + 1}", //Butonların üzerindeki A1.B2 gibi koltuk numaralarının yazılmasını sağlayan komut satırıdır.
-                        BackColor = Color.WhiteSmoke //Koltukların başlangıç rengini belirler.
+                        Width = size,
+                        Height = size,
+                        Left = j * (size + gap),
+                        Top = i * (size + gap),
+                        Text = $"{(char)('A' + i)}{j + 1}",
+                        BackColor = Color.WhiteSmoke
                     };
 
-                    btn.Click += Seat_Click;//Koltuk butonuna tıklandığında çalışacak Click olayını bağlar. Click : Kullanıcının fareyle tıklaması sonucu tetiklenen olay anlamına gelir.
-                    panelKoltuklar.Controls.Add(btn); //Oluşturulan koltuk butonunu panelin içine ekler.
+                    btn.Click += Seat_Click;
+                    panelKoltuklar.Controls.Add(btn);
                 }
             }
         }
 
-        private void KoltukRenkleriniDbyeGoreAyarla() //Koltuk renklerinin veritabanındaki dolu/boş bilgisine göre ayarlamak için tanımlanmış metottur.
+        private void KoltukRenkleriniDbyeGoreAyarla()
         {
-            try //Veritabanı işlemleri sırasında oluşabilecek hataları yakalamak için hata yönetim bloğu başlatır.
+            try
             {
-                using (var conn = new MySqlConnection(cs)) //MySQL veritabanı bağlantısı açar ve işlem bitince otomatik olarak kapatılmasını sağlar.
+                using (var conn = new MySqlConnection(cs))
                 {
-                    conn.Open(); //Veritabanı bağlantısını aktif hale getirir.
+                    conn.Open();
 
-                    foreach (Control c in panelKoltuklar.Controls) //Panel içindeki tüm kontrolleri tek tek dolaşır.
+                    foreach (Control c in panelKoltuklar.Controls)
                     {
-                        if (c is Button koltuk) //Paneldeki kontrolün bit buton (koltuk) olup olmadığını kontrol eder. 
-                                                
-
+                        if (c is Button koltuk)
                         {
-                            var cmd = new MySqlCommand( 
-                                "SELECT COUNT(*) FROM bilet " + 
-                                "WHERE etkinlik_id=@e AND koltuk_no=@k AND durum='Aktif'", 
+                            var cmd = new MySqlCommand(
+                                "SELECT COUNT(*) FROM bilet " +
+                                "WHERE etkinlik_id=@e AND koltuk_no=@k AND durum='Aktif'",
                                 conn);
-                            
 
-                            cmd.Parameters.AddWithValue("@e", AKTIF_ETKINLIK_ID); 
-                            cmd.Parameters.AddWithValue("@k", koltuk.Text); 
+                            cmd.Parameters.AddWithValue("@e", _aktifEtkinlikId);
+                            cmd.Parameters.AddWithValue("@k", koltuk.Text);
 
-                            int sayi = Convert.ToInt32(cmd.ExecuteScalar()); 
-                            koltuk.BackColor = (sayi > 0) ? Color.Red : Color.WhiteSmoke; 
+                            int sayi = Convert.ToInt32(cmd.ExecuteScalar());
+                            koltuk.BackColor = (sayi > 0) ? Color.Red : Color.WhiteSmoke;
                         }
                     }
                 }
             }
-            catch (Exception ex) // try bloğunda oluşan herhangi bir hatayı yakalamak için kullanılan hata yakalama bloğudur.
-            {// catch bloğunun başladığını gösterir.
-                MessageBox.Show("Koltuk durumu okunamadı:\n" + ex.Message); //Hata oluştuğunda kullanıcıya, hata açıklamasıyla birlikte bilgilendirici bir mesaj gösterir.
+            catch (Exception ex)
+            {
+                MessageBox.Show("Koltuk durumu okunamadı:\n" + ex.Message);
             }
         }
 
-        private void IptalKontrolleriniKur() //İptal işlemleri için gerekli arayüz kontrollerini oluşturmak ve ayarlamak amacıyla tanımlanmış metottur.
+        private void IptalKontrolleriniKur()
         {
-            chkIptal = new CheckBox //İptal modunu açıp kapatmak için yeni bir ChecBox nesnesi oluşturur.
+            chkIptal = new CheckBox
             {
-                Name = "chkIptal", //ChecBox'a kod içinde erişmek için kullanılacak benzersiz adını belirler.
-                Text = "İptal Modu", //ChecBox'ın ekranda kullanıcıya gösterilecek metini belirler.
-                AutoSize = true, //CheckBox'ın boyutunun içeriğine göre otomatik ayarlanmasını sağlar.
-                Left = btnSave.Left, //CheckBox'ın yatay konumunu btnSave butonuyla hizalar.
-                Top = btnSave.Bottom + 5 //CheckBox'ın btnSave butonunun biraz altına yerleştirir.
+                Name = "chkIptal",
+                Text = "İptal Modu",
+                AutoSize = true,
+                Left = btnSave.Left,
+                Top = btnSave.Bottom + 5
             };
 
-            btnIptal = new Button //İptal işlemini başlatmak için yeni bir Button nesnesi oluşturur.
-            { //Buton özelliklerinin ayarlandığı bloğun başladıpını gösterir.
-                Name = "btnIptalDinamik", //Butona kod içinde erişmek için kullanılacak benzersiz adını belirler.
-                Text = "Bileti İptal Et",//Butonun kullanıcıya ekranda gösterilecek metini blirler.
-                Width = btnSave.Width, //Butonun genişliğini btnSave butonuyla aynı yapar.
-                Height = 35, //Butonun yüksekliğini piksel cinsinden belirler.
-                Left = btnSave.Left, //Butonun yatay konumunu btnSave butonuyla hizalar.
-                Top = chkIptal.Bottom + 5, //Butonu, iptal modu CheckBox'ının biraz altına yerleştirir.
-                Visible = false //Butonu başlangıçta gizler, sadece iptal modu aktif olduğunda görünür.
-            };
-
-            chkIptal.CheckedChanged += (s, a) => //CheckBox'ın işaretlenme durumunu değiştiğinde çalışacak olayı tanımlar.
+            btnIptal = new Button
             {
-                iptalModu = chkIptal.Checked; //CheckBox işaretliyse iptal modunu aktif, değilse pasif yapar.
-                btnIptal.Visible = iptalModu; //İptal modu açıksa iptal butonunu görünür, kapalıysa gizli yapar.
-                btnSave.Enabled = !iptalModu; //İptal modu aktifken kaydet/satın al butonunu devre dışı bırakır. Enabled=? 
-
-                IptalSeciminiTemizle();//Daha önce seçilmiş iptal koltuğu varsa seçimi sıfırlar. 
-                SatisSeciminiTemizle();//Satın alma için seçilmiş koltukları sıfırlar.
+                Name = "btnIptalDinamik",
+                Text = "Bileti İptal Et",
+                Width = btnSave.Width,
+                Height = 35,
+                Left = btnSave.Left,
+                Top = chkIptal.Bottom + 5,
+                Visible = false
             };
 
-            btnIptal.Click += btnIptal_Click; //İptal butonuna basıldığında çalışacak Click olayını bağlar.
+            chkIptal.CheckedChanged += (s, a) =>
+            {
+                iptalModu = chkIptal.Checked;
+                btnIptal.Visible = iptalModu;
+                btnSave.Enabled = !iptalModu;
 
-            Controls.Add(chkIptal); //İptal modu CheckBox'ını forma ekler. 
-            Controls.Add(btnIptal);// İptal butonun forma ekler.
+                IptalSeciminiTemizle();
+                SatisSeciminiTemizle();
+            };
+
+            btnIptal.Click += btnIptal_Click;
+
+            Controls.Add(chkIptal);
+            Controls.Add(btnIptal);
         }
 
-        private void Seat_Click(object sender, EventArgs e) //Herhangi bir koltuk butonuna tıklandığında çalışan ortak Click olay metodudur.
+        private void Seat_Click(object sender, EventArgs e)
         {
-            Button tiklanan = (Button)sender; //Tıklanan kontrolü Button türüne çevirerek hangi koltuğa basıldığını belirler.
+            Button tiklanan = (Button)sender;
 
-            // İptal durumuyla ilgili işlemler burada yer alır.
-            if (iptalModu) //Uygulamanın iptal modunda olup olmadığını kontrol eder.
+            if (iptalModu)
             {
-                if (tiklanan.BackColor != Color.Red && tiklanan.BackColor != Color.Gold) //Tıklanan koltuğun satılmış ya da iptal için seçili olup olmadığını kontrol eder.
+                if (tiklanan.BackColor != Color.Red && tiklanan.BackColor != Color.Gold)
                 {
-                    MessageBox.Show("İptal için satılmış (kırmızı) koltuk seçmelisiniz."); // Yanlış koltuk seçilirse kullanıcıyı uyarı mesajı ile bilgilendirir.
-                    return; // Hatalı seçim durumunda metottan hemen çıkar.
+                    MessageBox.Show("İptal için satılmış (kırmızı) koltuk seçmelisiniz.");
+                    return;
                 }
-                //Daha önce seçilmiş başka bir iptal koltuğu varsa onu kontrol eder.
-                if (iptalSecilenKoltuk != null && iptalSecilenKoltuk != tiklanan)
-                    iptalSecilenKoltuk.BackColor = Color.Red; 
 
-                //Aynı koltuğa tekrar tıklarsa iptal seçimini kaldırır.
+                if (iptalSecilenKoltuk != null && iptalSecilenKoltuk != tiklanan)
+                    iptalSecilenKoltuk.BackColor = Color.Red;
+
                 if (iptalSecilenKoltuk == tiklanan && tiklanan.BackColor == Color.Gold)
                 {
-                    tiklanan.BackColor = Color.Red; //İptal seçimi kaldırıldığında koltuğu tekrar satılmış rengine çevirir.
-                    iptalSecilenKoltuk = null; //İptal için seçilmiş koltuk bilgisini temizler.
-                    txtKoltukNo.Text = "";//Koltuk numarasını boşaltır.
-                    return;//Bu işlem tamamlandığında metottan çıkar.
+                    tiklanan.BackColor = Color.Red;
+                    iptalSecilenKoltuk = null;
+                    txtKoltukNo.Text = "";
+                    return;
                 }
 
-                iptalSecilenKoltuk = tiklanan;// Tıklanan koltuğun iptal edilecek koltuk olarak kaydeder.
-                iptalSecilenKoltuk.BackColor = Color.Gold; // İptal için seçilen koltuğu altın renkle vurgular.
-                txtKoltukNo.Text = iptalSecilenKoltuk.Text; //Seçilen koltuğun numarasını ekranda gösterir.
-                return; //İptal modu işlemleri tamalandığı için metottan çıkar.
+                iptalSecilenKoltuk = tiklanan;
+                iptalSecilenKoltuk.BackColor = Color.Gold;
+                txtKoltukNo.Text = iptalSecilenKoltuk.Text;
+                return;
             }
 
-            // Normal bilet satın alma moduna ait olduğunu belirtir.
-            if (tiklanan.BackColor == Color.Red) //Tıklanan koltuğun satılmış olup olmadığını kontrol eder.
+            if (tiklanan.BackColor == Color.Red)
             {
-                MessageBox.Show("Bu koltuk dolu."); //Koltuk doluysa kullanıcıyı uyarır.
-                return;// Koltuk dolu olduğu için işlemi durdurur ve metottan çıkar.
+                MessageBox.Show("Bu koltuk dolu.");
+                return;
             }
 
-            if (selectedSeats.Contains(tiklanan)) //Tıklanan koltuğun daha önce seçilmiş olup olmadığını kontrol eder.
+            if (selectedSeats.Contains(tiklanan))
             {
-                selectedSeats.Remove(tiklanan); //Koltuk zaten seçiliyse seçim listesinden çıkarır.
-                tiklanan.BackColor = Color.WhiteSmoke; //Seçimi kaldırılan koltuğu boş koltuk rengine dönüştürür.
+                selectedSeats.Remove(tiklanan);
+                tiklanan.BackColor = Color.WhiteSmoke;
             }
-            else //Koltuk seçili değilse seçim ekleme kısmına geçer.
-            { //Seçim ekleme bloğunun başladığını gösterir.
-                selectedSeats.Add(tiklanan); //Yeni seçilen koltuğu seçili koltuklar listesine ekler.
-                tiklanan.BackColor = Color.LightGreen; //Seçilen koltuğu yeşil renkle vurgular.
+            else
+            {
+                selectedSeats.Add(tiklanan);
+                tiklanan.BackColor = Color.LightGreen;
             }
 
-            txtKoltukNo.Text = string.Join(", ", selectedSeats.Select(x => x.Text)); //Seçilen tüm koltuk numaralarını virgülle ayrılmış şekilde ekranda gösterir.
-            GuncelleBiletTuruBilgisi(); // Seçilen koltuklara göre bilet türü ve fiyat bilgisini günceller.
-        } //Bu kodlar, normal satış modunda dolu koltukların seçilmesini engeller, boş koltukları seçip/çıkarmayı yönetir ve seçime göre fiyat bilgisini günceller.
+            txtKoltukNo.Text = string.Join(", ", selectedSeats.Select(x => x.Text));
+            GuncelleBiletTuruBilgisi();
+        }
 
-        // Fiyat hesaplamayla ilgili metotlar burada yer alır.
-        private decimal GetKoltukFiyati(char sira) //Verilen koltuk sırasına göre biletin temel fiyatını döndüren metottur.
+        private decimal GetKoltukFiyati(char sira)
         {
-            switch (char.ToUpper(sira)) //Koltuk büyük harfe çevirir ve hangi sıraya ait olduğunu kontrol eder. Switch = Birden fazla olasılık arasından uygun olan kod bloğunu çalıştırmayı sağlayan karar yapısıdır.
+            switch (char.ToUpper(sira))
             {
-                case 'A': return 500; //case = 
+                case 'A': return 500;
                 case 'B': return 450;
                 case 'C': return 400;
                 case 'D': return 350;
                 case 'E': return 300;
                 case 'F': return 250;
-                default: return 0; //Tanımsız bir sıra gelirse 0 değerini döndürür.
-                                   //default: return 0; bu satır olmazsa; switch ifadesine uymayan bir değer geldiğinde metot bir değer döndürmeden biter ve C# derleme hatası verir.
+                default: return 0;
             }
         }
 
-        private decimal GetKoltukIndirimi(char sira) //Koltuk sırasına göre uygulanacak indirim tutarını hesaplayan metottur.
+        private decimal GetKoltukIndirimi(char sira)
         {
-            
             switch (char.ToUpper(sira))
             {
                 case 'A': return 50;
-                case 'B': return 40;  
+                case 'B': return 40;
                 case 'C': return 30;
                 case 'D': return 20;
-                case 'E': return 10; 
+                case 'E': return 10;
                 case 'F': return 5;
                 default: return 0;
             }
         }
 
         private void HesaplaToplamTutar(List<string> koltuklar,
-                                        out decimal toplamFiyat,
-                                        out decimal toplamIndirim,
-                                        out decimal odenecekTutar) //Seçilen koltuklara göre toplam fiyatı, toplam indirimi ve ödenecek tutarı hesaplayan metottur.
+            out decimal toplamFiyat,
+            out decimal toplamIndirim,
+            out decimal odenecekTutar)
         {
-            toplamFiyat = 0; //Toplam fiyat değişkenini başlangıçta sıfırlar.
-            toplamIndirim = 0;//Toplam indirim değişkenini başlangıçta sıfırlar.
+            toplamFiyat = 0;
+            toplamIndirim = 0;
 
-            if (koltuklar == null || koltuklar.Count == 0) //Koltuk listesi boş ve yoksa kontrol eder.
+            if (koltuklar == null || koltuklar.Count == 0)
             {
-                odenecekTutar = 0; //Seçili koltuk yoksa ödenecek tutarı sıfırlar.
-                return; //Hesaplama yapmadan metottan çıkar.
+                odenecekTutar = 0;
+                return;
             }
 
-            foreach (var koltuk in koltuklar) //Seçilen her koltuğu tek tek dolaşır.
+            foreach (var koltuk in koltuklar)
             {
-                if (string.IsNullOrWhiteSpace(koltuk)) continue; //Geçersiz(boş) koltuk bilgisi varsa o koltuğu atlar.
+                if (string.IsNullOrWhiteSpace(koltuk)) continue;
 
-                char sira = char.ToUpper(koltuk[0]); //Koltuk numarasının ilk harfini (A-F) sıra bilgisi olarak alır.
-                toplamFiyat += GetKoltukFiyati(sira);//Koltuk sırasına göre fiyatı toplama ekler. 
-                toplamIndirim += GetKoltukIndirimi(sira);//Koltuk sırasına göre indirimi toplama ekler.
+                char sira = char.ToUpper(koltuk[0]);
+                toplamFiyat += GetKoltukFiyati(sira);
+                toplamIndirim += GetKoltukIndirimi(sira);
             }
 
-            // Birden fazla koltuk alımlarında indirim yapılıyor.
-            if (koltuklar.Count < 2) toplamIndirim = 0; //Tek koltuk seçildiyse indirimi iptal eder.
+            if (koltuklar.Count < 2) toplamIndirim = 0;
 
-            odenecekTutar = toplamFiyat - toplamIndirim; //Toplam fiyattan indirimi çıkararak ödenecek net tutarı hesaplar.
+            odenecekTutar = toplamFiyat - toplamIndirim;
         }
 
-        private void GuncelleBiletTuruBilgisi() //Seçilen koltuklara göre ekrandaki fiyat bilgisini güncelleyen metottur.
+        private void GuncelleBiletTuruBilgisi()
         {
-            comboBox1.Items.Clear(); //ComboBox içindeki önceki tüm bilgileri temizler.
+            comboBox1.Items.Clear();
 
-            if (selectedSeats.Count == 0) //Henüz hiç koltuk seçilmemişse kontrol eder.
+            if (selectedSeats.Count == 0)
             {
-                comboBox1.Items.Add("Koltuk seçiniz"); //Kullanıcıya bilgilendirici mesaj ekler.
-                comboBox1.SelectedIndex = 0; //ComboBox'ta bu mesajın seçili görünmesini sağlar.
-                return;//Koltuk seçimi yoksa metottan çıkar.
+                comboBox1.Items.Add("Koltuk seçiniz");
+                comboBox1.SelectedIndex = 0;
+                return;
             }
 
-            List<string> koltukKodlari = selectedSeats.Select(b => b.Text).ToList(); //Seçili koltuk butonlarının üzerindeki yazıları (A1,B2 vb.) listeye çevirir.
+            List<string> koltukKodlari = selectedSeats.Select(b => b.Text).ToList();
 
-            decimal toplamFiyat, toplamIndirim, odenecekTutar; //Hesaplama sonuçlarını tutacak değişkenleri tanımlar.
-            HesaplaToplamTutar(koltukKodlari, out toplamFiyat, out toplamIndirim, out odenecekTutar); //Seçili koltuklara göre toplam tutar hesaplamasını yaptırır.
+            decimal toplamFiyat, toplamIndirim, odenecekTutar;
+            HesaplaToplamTutar(koltukKodlari, out toplamFiyat, out toplamIndirim, out odenecekTutar);
 
-            comboBox1.Items.Add($"Toplam: {odenecekTutar} TL (İndirim: {toplamIndirim} TL)"); //Hesaplanan toplam ve indirim bilgisini ComboBox'ta kullanıcıya gösterir.
-            comboBox1.SelectedIndex = 0; //Gösterilen fiyat bilgisini seçili hale getirir.
+            comboBox1.Items.Add($"Toplam: {odenecekTutar} TL (İndirim: {toplamIndirim} TL)");
+            comboBox1.SelectedIndex = 0;
         }
 
-        private void btnSave_Click(object sender, EventArgs e) //Kaydet/Satın Al butonuna basıldığında çalışan olay metodudur.
+        private void btnSave_Click(object sender, EventArgs e)
         {
-            if (selectedSeats.Count == 0) //Hiç koltuk seçilmediğini ifade ediyor.
+            if (selectedSeats.Count == 0)
             {
-                MessageBox.Show("Lütfen koltuk seçin."); //Koltuk seçilmemişse kullanıcıyı uyarı mesajıyla bilgilendirir.
-                return;//Koltuk seçilmediği için işlemi durdurur.
+                MessageBox.Show("Lütfen koltuk seçin.");
+                return;
             }
 
-            if (string.IsNullOrWhiteSpace(txtAdSoyad.Text)) //Ad Soyad bloğunun boş olup olmadığını kontrol eder. Zorunlu kılan satır hangisi=?
-
+            if (string.IsNullOrWhiteSpace(txtAdSoyad.Text))
             {
-                MessageBox.Show("Lütfen Ad Soyad girin."); //Blok eğer boşsa kullanıcıya uyarı mesajıyla bilgilendirir.
-                return;//İsim girilmediği için işlemi durdurur.
+                MessageBox.Show("Lütfen Ad Soyad girin.");
+                return;
             }
 
-            List<string> koltukKodlari = selectedSeats.Select(b => b.Text).ToList(); //Seçilen koltkların koflarını (A1,B2 vb) listeye çevirir.
+            List<string> koltukKodlari = selectedSeats.Select(b => b.Text).ToList();
 
-            decimal toplamFiyat, toplamIndirim, odenecekTutar; // Tutulacak değişkenleri tanımlar.
-            HesaplaToplamTutar(koltukKodlari, out toplamFiyat, out toplamIndirim, out odenecekTutar); //Seçilen koltuklara göre fiyat ve indirim hesaplamasını yapar.
+            decimal toplamFiyat, toplamIndirim, odenecekTutar;
+            HesaplaToplamTutar(koltukKodlari, out toplamFiyat, out toplamIndirim, out odenecekTutar);
 
-            List<int> biletIdleri = new List<int>(); //Veritabanına eklenen biletlerin ID'lerini tutacak listeyi oluşturur.
-
-            try
-            {
-                using (var conn = new MySqlConnection(cs)) //Veritabanı bağlantısını açar ve işlem bitince otomatik kapanmasını sağlar. Neden birden fazla kez veritabanı bağlantısı açtık?
-                {
-                    conn.Open(); 
-
-                    foreach (string koltukNo in koltukKodlari) //Seçilen her koltuk için ayrı ayrı bilet kaydı oluşturur.
-                    {
-                        var cmd = new MySqlCommand( 
-
-                            "INSERT INTO bilet (kullanici_id, etkinlik_id, koltuk_no, satin_alma_tarihi, durum, isim) " +
-                            "VALUES (@k, @e, @koltuk, NOW(), 'Aktif', @isim)", conn); 
-
-                        cmd.Parameters.AddWithValue("@k", AKTIF_KULLANICI_ID); 
-                        cmd.Parameters.AddWithValue("@e", AKTIF_ETKINLIK_ID);
-                        cmd.Parameters.AddWithValue("@koltuk", koltukNo);
-                        cmd.Parameters.AddWithValue("@isim", txtAdSoyad.Text); 
-
-                        cmd.ExecuteNonQuery();
-                        biletIdleri.Add((int)cmd.LastInsertedId);
-                    }
-                }
-
-                // Ödeme formunu, gerekli bilgilerle modal (kilitleyici) şekilde açar.BU NE DEMEK?
-                new FrmOdeme(cs, AKTIF_KULLANICI_ID, biletIdleri, odenecekTutar).ShowDialog();
-
-                // Satılan koltukların dolu göstereceğini belirtir.Satılan tüm koltukları tek tek dolaşır. NEDEN ?
-                foreach (var seat in selectedSeats)
-                    seat.BackColor = Color.Red;//Satılan koltukları kırmızı renge çevirir.
-
-                selectedSeats.Clear(); //Seçili koltuk listesini temizler.
-                txtKoltukNo.Text = "";//Koltuk numarası alanını temizler.
-                txtAdSoyad.Text = "";//Ad Soyad alanını temizler.
-                GuncelleBiletTuruBilgisi();//Ekrandaki fiyat bilgisini yeniden günceller
-            }
-            catch (Exception ex) //Satın alma hatalarını yakalamak için kullanılır.
-            {
-                MessageBox.Show("Satın alma hatası:\n" + ex.Message); //Oluşan hatayı detay messajıyla birlikte gösterir.
-            }
-        }
-        //btnIptal_Click Metodu
-        private void btnIptal_Click(object sender, EventArgs e) //İptal butonuna basıldığında çalışan olay metodudur.
-        {
-            if (!iptalModu) //İptal modunun açık olup olmadığını kontrol eder.
-            {
-                MessageBox.Show("Önce İptal Modu'nu açın."); //İptal modu kapalıysa kullanıcıyı uyarı mesajıyla bilgilendirir.
-                return;//İptal modu kapalı olduğu için işlemi durdurur.
-            }
-
-            if (iptalSecilenKoltuk == null) //İptal edilecek bir koltuk seçilip seçilmediğini kontrol eder.
-            {
-                MessageBox.Show("İptal edilecek koltuğu seçin."); //Koltuk seçilmediyse kullanıcıya uyarı mesajıyla bilgilendirir
-                return; //Koltuk seçilmediği için işlemi durdurur.
-            }
-
-            string koltukNo = iptalSecilenKoltuk.Text; //İptal edilecek koltuğun numarasını alır.
+            List<int> biletIdleri = new List<int>();
 
             try
             {
                 using (var conn = new MySqlConnection(cs))
                 {
                     conn.Open();
-                    using (var tx = conn.BeginTransaction()) //Yapılacak iptal işlemi tek parça halinde yönetir. BU NE DEMEK?
+
+                    foreach (string koltukNo in koltukKodlari)
                     {
-                        //Aynı koltuğun eski iptal kayıtlarını temizler.
+                        var cmd = new MySqlCommand(
+                            "INSERT INTO bilet (kullanici_id, etkinlik_id, koltuk_no, satin_alma_tarihi, durum, isim) " +
+                            "VALUES (@k, @e, @koltuk, NOW(), 'Aktif', @isim)", conn);
+
+                        cmd.Parameters.AddWithValue("@k", _aktifKullaniciId);
+                        cmd.Parameters.AddWithValue("@e", _aktifEtkinlikId);
+                        cmd.Parameters.AddWithValue("@koltuk", koltukNo);
+                        cmd.Parameters.AddWithValue("@isim", txtAdSoyad.Text);
+
+                        cmd.ExecuteNonQuery();
+                        biletIdleri.Add((int)cmd.LastInsertedId);
+                    }
+                }
+
+                new FrmOdeme(cs, _aktifKullaniciId, biletIdleri, odenecekTutar).ShowDialog();
+
+                foreach (var seat in selectedSeats)
+                    seat.BackColor = Color.Red;
+
+                selectedSeats.Clear();
+                txtKoltukNo.Text = "";
+                txtAdSoyad.Text = "";
+                GuncelleBiletTuruBilgisi();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Satın alma hatası:\n" + ex.Message);
+            }
+        }
+
+        private void btnIptal_Click(object sender, EventArgs e)
+        {
+            if (!iptalModu)
+            {
+                MessageBox.Show("Önce İptal Modu'nu açın.");
+                return;
+            }
+
+            if (iptalSecilenKoltuk == null)
+            {
+                MessageBox.Show("İptal edilecek koltuğu seçin.");
+                return;
+            }
+
+            string koltukNo = iptalSecilenKoltuk.Text;
+
+            try
+            {
+                using (var conn = new MySqlConnection(cs))
+                {
+                    conn.Open();
+                    using (var tx = conn.BeginTransaction())
+                    {
                         var sil = new MySqlCommand(
                             "DELETE FROM bilet WHERE etkinlik_id=@e AND koltuk_no=@k AND durum='Iptal'",
                             conn, tx);
-                        sil.Parameters.AddWithValue("@e", AKTIF_ETKINLIK_ID); //Silme sorgusuna aktif etkinlik ID'sini ekler.
-                        sil.Parameters.AddWithValue("@k", koltukNo); //Silme sorgusuna iptal edilecek koltuk numarasını ekler.
-                        sil.ExecuteNonQuery();//Silme SQL komutunu çalıştırır.
+                        sil.Parameters.AddWithValue("@e", _aktifEtkinlikId);
+                        sil.Parameters.AddWithValue("@k", koltukNo);
+                        sil.ExecuteNonQuery();
 
-                        
                         var iptal = new MySqlCommand(
                             "UPDATE bilet SET durum='Iptal', iptal_tarihi=NOW() " +
                             "WHERE etkinlik_id=@e AND koltuk_no=@k AND durum='Aktif' LIMIT 1",
                             conn, tx);
-                        iptal.Parameters.AddWithValue("@e", AKTIF_ETKINLIK_ID);
+                        iptal.Parameters.AddWithValue("@e", _aktifEtkinlikId);
                         iptal.Parameters.AddWithValue("@k", koltukNo);
-                        int affected = iptal.ExecuteNonQuery(); //Kaç satırın eklendiğini kontrol etmek için sonucu alır.
-                        if (affected == 0) //Aktif biletin bulunup bulunmadığını kontrol eder.
+
+                        int affected = iptal.ExecuteNonQuery();
+                        if (affected == 0)
                         {
-                            tx.Rollback(); //İşlemleri geri alır (iptal eder).
+                            tx.Rollback();
                             MessageBox.Show("Aktif bilet bulunamadı.");
-                            return; //İşlem başarısız olduğu için metottan çıkar.
+                            return;
                         }
 
-                        tx.Commit(); //Tüm iptal işlemlerini kalıcı olarak veritabanına kaydeder.
+                        tx.Commit();
                     }
                 }
 
-                iptalSecilenKoltuk.BackColor = Color.WhiteSmoke; //İptali tamamlanan koltuğun rengini boş koltuk rengine çevirir.
-                iptalSecilenKoltuk = null;//İptal için seçilmiş koltuk bilgisini temizler.
-                txtKoltukNo.Text = ""; //Koltuk numarası gösterilen metin alanını boşaltır.
+                iptalSecilenKoltuk.BackColor = Color.WhiteSmoke;
+                iptalSecilenKoltuk = null;
+                txtKoltukNo.Text = "";
                 MessageBox.Show("Bilet iptal edildi.");
             }
             catch (Exception ex)
@@ -418,28 +446,27 @@ namespace beste //Projenin isim alanını temsil eder.
                 MessageBox.Show("İptal sırasında hata:\n" + ex.Message);
             }
         }
-        //Satış temizleme işlemleriyle ilgili metotlar burada bulunur.
-        private void SatisSeciminiTemizle() //Satın alma için seçilmiş koltukları tamamen temizleyen yardımcı metottur.
-        {
-            foreach (var seat in selectedSeats) //Seçili tüm koltukları tek tek dolaşır.
-                if (seat.BackColor == Color.LightGreen) //Sadece satıl alma için seçilmiş koltukları kontrol eder.
-                    seat.BackColor = Color.WhiteSmoke;//Yeşil koltukları boş koltuk rengine geri döndürür.
 
-            selectedSeats.Clear(); //Seçili koltuklar listesini tamamen boşaltır.
-            txtKoltukNo.Text = ""; //Koltuk numarası alanını temizler.
-            GuncelleBiletTuruBilgisi(); //Ekrandaki fiyat/bilet bilgisi alanını günceller.
+        private void SatisSeciminiTemizle()
+        {
+            foreach (var seat in selectedSeats)
+                if (seat.BackColor == Color.LightGreen)
+                    seat.BackColor = Color.WhiteSmoke;
+
+            selectedSeats.Clear();
+            txtKoltukNo.Text = "";
+            GuncelleBiletTuruBilgisi();
         }
 
-        private void IptalSeciminiTemizle() //İptal için seçilmiş koltuğu sıfırlayan yardımcı metottur.
+        private void IptalSeciminiTemizle()
         {
-            if (iptalSecilenKoltuk != null && iptalSecilenKoltuk.BackColor == Color.Gold) //İptal için seçilmiş ve altın renkte olan koltuğu kontrol eder.
-                iptalSecilenKoltuk.BackColor = Color.Red; //İptal seçimini kaldırıp koltuğu tekrar satılmış durumuna getirir.
+            if (iptalSecilenKoltuk != null && iptalSecilenKoltuk.BackColor == Color.Gold)
+                iptalSecilenKoltuk.BackColor = Color.Red;
 
-            iptalSecilenKoltuk = null; //İptal seçimi bilgisini tamamen temizler.
-            txtKoltukNo.Text = ""; //Koltuk numarası alanını boşaltır.
+            iptalSecilenKoltuk = null;
+            txtKoltukNo.Text = "";
         }
 
-        // Designer bağlıysa hata vermesin diye kalsın.Tasarımcı tarafından otomatik bağlandığı için boş bırakılır.
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e) { }
     }
 }

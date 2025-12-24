@@ -17,15 +17,19 @@
             {
                 components.Dispose();
             }
+
+            // QR resmi dispose
+            if (disposing && picQR != null && picQR.Image != null)
+            {
+                picQR.Image.Dispose();
+                picQR.Image = null;
+            }
+
             base.Dispose(disposing);
         }
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             this.picQR = new System.Windows.Forms.PictureBox();
@@ -35,8 +39,6 @@
             this.lblKoltuk = new System.Windows.Forms.Label();
             this.lblPNR = new System.Windows.Forms.Label();
             this.lblFiyat = new System.Windows.Forms.Label();
-            this.btnKapat = new System.Windows.Forms.Button();
-            this.btnQRYenile = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.picQR)).BeginInit();
             this.SuspendLayout();
             // 
@@ -104,31 +106,11 @@
             this.lblFiyat.TabIndex = 6;
             this.lblFiyat.Text = "Fiyat:";
             // 
-            // btnKapat
-            // 
-            this.btnKapat.Location = new System.Drawing.Point(310, 283);
-            this.btnKapat.Name = "btnKapat";
-            this.btnKapat.Size = new System.Drawing.Size(75, 23);
-            this.btnKapat.TabIndex = 7;
-            this.btnKapat.Text = "Kapat";
-            this.btnKapat.UseVisualStyleBackColor = true;
-            // 
-            // btnQRYenile
-            // 
-            this.btnQRYenile.Location = new System.Drawing.Point(310, 331);
-            this.btnQRYenile.Name = "btnQRYenile";
-            this.btnQRYenile.Size = new System.Drawing.Size(125, 23);
-            this.btnQRYenile.TabIndex = 8;
-            this.btnQRYenile.Text = "QR Yenile";
-            this.btnQRYenile.UseVisualStyleBackColor = true;
-            // 
             // FrmBiletQR
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Controls.Add(this.btnQRYenile);
-            this.Controls.Add(this.btnKapat);
             this.Controls.Add(this.lblFiyat);
             this.Controls.Add(this.lblPNR);
             this.Controls.Add(this.lblKoltuk);
@@ -145,7 +127,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.picQR)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
@@ -157,7 +138,5 @@
         private System.Windows.Forms.Label lblKoltuk;
         private System.Windows.Forms.Label lblPNR;
         private System.Windows.Forms.Label lblFiyat;
-        private System.Windows.Forms.Button btnKapat;
-        private System.Windows.Forms.Button btnQRYenile;
     }
 }
