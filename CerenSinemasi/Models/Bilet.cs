@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace beste.Models
+namespace beste.Models //bilet bilgilerini tek bir nesnede toplamak için va
 {
     public class Bilet
     {

@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace CerenSinemasi
+namespace beste
 {
     public partial class FormKoltukSecim : Form
     {
@@ -19,7 +12,7 @@ namespace CerenSinemasi
 
         private void FormKoltukSecim_Load(object sender, EventArgs e)
         {
-
+            // Bu form kullanılmıyorsa boş kalabilir.
         }
     }
 }

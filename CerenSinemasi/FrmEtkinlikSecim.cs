@@ -6,89 +6,96 @@ using MySqlConnector;
 
 namespace beste
 {
-    public partial class FrmEtkinlikSecim : Form
+    public partial class FrmEtkinlikSecim : Form // FrmEtkinlikSecim adlı ekranın bir Windows Form olduğunu söyler.
     {
         private readonly string cs =
             "Server=localhost;Database=bilet_sistemi;User Id=root;Password=Ghezzal18.";
 
-        private const int AKTIF_KULLANICI_ID = 1;
+        private const int AKTIF_KULLANICI_ID = 1; // Giriş (login) sistemi olmadığı için aktif kullanıcı şimdilik sabit (1) tutuluyor.
 
-        private FlowLayoutPanel flow;
+        private FlowLayoutPanel flow; // Etkinlik kartlarının listeleneceği paneli tutmak için değişken tanımlar.
 
-        public FrmEtkinlikSecim()
+        public FrmEtkinlikSecim()  
         {
-            BuildUi();
-            Load += FrmEtkinlikSecim_Load;
+            BuildUi(); // Formun içindeki kontrolleri (label, panel vb.) kodla oluşturan metodu çağırır.
+            Load += FrmEtkinlikSecim_Load; // Form açılınca FrmEtkinlikSecim_Load metodunun çalışmasını sağlar.
         }
 
-        private void FrmEtkinlikSecim_Load(object sender, EventArgs e)
+        private void FrmEtkinlikSecim_Load(object sender, EventArgs e) // Form ilk açıldığında çalışacak kodların bulunduğu metottur.
         {
-            EtkinlikleriYukle();
+            EtkinlikleriYukle(); // Veritabanından etkinlikleri çekip ekrana dizen metodu çağırır
         }
 
-        private void BuildUi()
+        private void BuildUi() // Formun tasarımını kodla kurmak için yazılmış metottur.
         {
-            Text = "beste";
-            StartPosition = FormStartPosition.CenterScreen;
+            Text = "beste"; // Formun üst başlığında görünen yazıyı ayarlar.
+            StartPosition = FormStartPosition.CenterScreen; // Formun ekranda ortada açılmasını sağlar.
             Width = 900;
             Height = 600;
 
-            var lblBaslik = new Label
+            var lblBaslik = new Label // Ekranın üstüne koymak için bir başlık yazısı oluşturur.
             {
-                Text = "beste",
-                Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                Text = "beste", // Ekranın başlığı
+                Font = new Font("Segoe UI", 16, FontStyle.Bold), // Başlık yazısını büyük ve kalın yapar.
                 AutoSize = true,
                 Left = 15,
                 Top = 10
             };
-            Controls.Add(lblBaslik);
+            Controls.Add(lblBaslik); // Bu başlık yazısını forma ekler (ekranda görünür hale getirir).
 
-            flow = new FlowLayoutPanel
+            flow = new FlowLayoutPanel // Etkinlik kartlarını yan yana/alt alta dizmek için bir panel oluşturur.
             {
                 Left = 15,
                 Top = 55,
                 Width = ClientSize.Width - 30,
                 Height = ClientSize.Height - 80,
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
-                AutoScroll = true
+                AutoScroll = true // Etkinlikler çok olursa kaydırma çubuğu çıkmasını sağlar.
             };
-            Controls.Add(flow);
+            Controls.Add(flow); // Bu paneli forma ekler ve ekranda görünür hale getirir.
         }
 
-        private void EtkinlikleriYukle()
+        private void EtkinlikleriYukle() // Etkinlikleri veritabanından çekip ekrana yerleştiren metottur.
         {
-            flow.Controls.Clear();
+            flow.Controls.Clear(); // Ekranda daha önce gösterilen etkinlikleri temizler.
 
-            using (var conn = new MySqlConnection(cs))
+            try
             {
-                conn.Open();
-
-                // ✅ fiyat bilgisi çekilmiyor (kartta fiyat gösterilmeyecek)
-                var cmd = new MySqlCommand(
-                    "SELECT etkinlik_id, etkinlik_adi, tarih, konum, afis_yolu " +
-                    "FROM etkinlik WHERE etkinlik_id IN (5,6) ORDER BY tarih",
-                    conn);
-
-                using (var r = cmd.ExecuteReader())
+                using (var conn = new MySqlConnection(cs))
                 {
-                    while (r.Read())
-                    {
-                        int etkinlikId = r.GetInt32("etkinlik_id");
-                        string ad = r.GetString("etkinlik_adi");
-                        DateTime tarih = r.GetDateTime("tarih");
-                        string konum = r.GetString("konum");
-                        string afis = r.IsDBNull(r.GetOrdinal("afis_yolu")) ? "" : r.GetString("afis_yolu");
+                    conn.Open();
 
-                        flow.Controls.Add(CreateCard(etkinlikId, ad, tarih, konum, afis));
+                    //  Artık sadece (5,6) değil, TÜM etkinlikler listelenir.
+                    var cmd = new MySqlCommand(
+                        "SELECT etkinlik_id, etkinlik_adi, tarih, konum, afis_yolu " +
+                        "FROM etkinlik ORDER BY tarih",
+                        conn);
+
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        while (r.Read())
+                        {
+                            int etkinlikId = r.GetInt32("etkinlik_id");
+                            string ad = r.IsDBNull(r.GetOrdinal("etkinlik_adi")) ? "" : r.GetString("etkinlik_adi");
+                            DateTime tarih = r.GetDateTime("tarih");
+                            string konum = r.IsDBNull(r.GetOrdinal("konum")) ? "-" : r.GetString("konum");
+                            string afis = r.IsDBNull(r.GetOrdinal("afis_yolu")) ? "" : r.GetString("afis_yolu"); // Afiş yolu boşsa hata olmaması için boş string atar, doluysa afiş yolunu alır.
+
+                            flow.Controls.Add(CreateCard(etkinlikId, ad, tarih, konum, afis)); // Her etkinlik için bir “kart” oluşturur ve ekrana ekler.
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Etkinlikler yüklenemedi:\n" + ex.Message);
+            }
         }
 
-        private Control CreateCard(int etkinlikId, string ad, DateTime tarih,
-                                   string konum, string afis)
+        // Verilen etkinlik bilgilerine göre ekranda gösterilecek bir kart (panel) oluşturur ve geri döndürür.
+        private Control CreateCard(int etkinlikId, string ad, DateTime tarih, string konum, string afis)
         {
-            var card = new Panel
+            var card = new Panel // Etkinliğin tamamını tutacak ana kart panelini oluşturur.
             {
                 Width = 400,
                 Height = 220,
@@ -96,7 +103,7 @@ namespace beste
                 Margin = new Padding(10)
             };
 
-            var pic = new PictureBox
+            var pic = new PictureBox // Etkinlik afişini göstermek için bir resim alanı oluşturur.
             {
                 Width = 140,
                 Height = 200,
@@ -106,13 +113,25 @@ namespace beste
                 BorderStyle = BorderStyle.FixedSingle
             };
 
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "images", afis);
-            if (!string.IsNullOrWhiteSpace(afis) && File.Exists(path))
+            // Resim yüklerken dosya kilitlenmesin diye Image.FromFile yerine stream ile yüklenir.
+            // Ayrıca afis boşsa ve dosya yoksa hata vermez.
+            try
             {
-                pic.Image = Image.FromFile(path);
+                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "images", afis); // fotoğraflar buradan çekiliyor.
+                if (!string.IsNullOrWhiteSpace(afis) && File.Exists(path))
+                {
+                    using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+                    {
+                        pic.Image = Image.FromStream(fs);
+                    }
+                }
+            }
+            catch
+            {
+                // Afiş yüklenemezse boş bırak (sunumda sorun çıkmasın)
             }
 
-            var lblAd = new Label
+            var lblAd = new Label // Etkinlik adını göstermek için bir yazı alanı oluşturur.
             {
                 Text = ad,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
@@ -121,7 +140,7 @@ namespace beste
                 Width = 220
             };
 
-            var lblTarih = new Label
+            var lblTarih = new Label // Etkinlik tarihini göstermek için bir yazı alanı oluşturur.
             {
                 Text = "Tarih: " + tarih.ToString("dd.MM.yyyy HH:mm"),
                 Left = 160,
@@ -129,7 +148,7 @@ namespace beste
                 Width = 220
             };
 
-            var lblKonum = new Label
+            var lblKonum = new Label // Etkinliğin yapılacağı yeri göstermek için yazı alanı oluşturur.
             {
                 Text = "Konum: " + konum,
                 Left = 160,
@@ -137,7 +156,7 @@ namespace beste
                 Width = 220
             };
 
-            var btnSec = new Button
+            var btnSec = new Button // Etkinliği seçmek için bir buton oluşturur.
             {
                 Text = "Seç",
                 Width = 120,
@@ -146,28 +165,36 @@ namespace beste
                 Top = 150
             };
 
-            // ✅ DOĞRU AKIŞ
+            // “Seç” butonuna basıldığında çalışacak kodları tanımlar.
             btnSec.Click += (s, e) =>
             {
-                this.Hide();
+                btnSec.Enabled = false;
 
-                // Form1'e "önceki form" olarak etkinlik ekranını gönderiyoruz
-                using (var frmKoltuk = new Form1(etkinlikId, AKTIF_KULLANICI_ID, this))
+                try
                 {
-                    frmKoltuk.ShowDialog();
-                }
+                    this.Hide(); // Etkinlik seçim ekranını geçici olarak gizler.
 
-                // Koltuk ekranı kapanınca tekrar etkinlik ekranını göster
-                this.Show();
+                    // Form1'e "önceki form" olarak etkinlik ekranını gönderiyoruz
+                    using (var frmKoltuk = new Form1(etkinlikId, AKTIF_KULLANICI_ID, this))
+                    {
+                        frmKoltuk.ShowDialog();
+                    }
+                }
+                finally
+                {
+                    // Koltuk ekranı kapanınca tekrar etkinlik ekranını göster
+                    this.Show();
+                    btnSec.Enabled = true;
+                }
             };
 
-            card.Controls.Add(pic);
-            card.Controls.Add(lblAd);
-            card.Controls.Add(lblTarih);
-            card.Controls.Add(lblKonum);
-            card.Controls.Add(btnSec);
+            card.Controls.Add(pic); // Etkinlik afişini karta ekler.
+            card.Controls.Add(lblAd); // Etkinlik adını karta ekler.
+            card.Controls.Add(lblTarih); // Etkinlik tarih bilgisini karta ekler.
+            card.Controls.Add(lblKonum); // Etkinlik konum bilgisini karta ekler.
+            card.Controls.Add(btnSec); // “Seç” butonunu karta ekler.
 
-            return card;
+            return card; // Oluşturulan etkinlik kartını, ekrana eklenmesi için geri gönderir.
         }
     }
 }
